@@ -17,7 +17,7 @@
 
 \section{Purpose}
 
-This note describes the mathematical model used to estimate a relative planar pose constraint between two stationary lidar scan bundles. The resulting relative pose and covariance may be used as a factor-graph edge, for example as a GTSAM \texttt{BetweenFactor<Pose2>}.
+This note describes the mathematical model used to estimate the relative planar transform between two lidar scans. The resulting relative pose and covariance may be used as a factor-graph edge, for example as a GTSAM \texttt{BetweenFactor<Pose2>}.
 
 The method is intended for an offline map-solving pipeline. Each station consists of one or more lidar scans acquired while the robot is stationary. The goal is to estimate relative transformations between scan bundles and then optimize the resulting pose graph.
 
