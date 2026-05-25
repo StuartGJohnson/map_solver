@@ -68,7 +68,6 @@ P_l(T_{ik}) =
 \alpha_j
 \mathcal{N}\left(\tilde p_l(T_{ik}); q_j, \Sigma_{lj}\right).
 \end{equation}
-
 Equal mixture weights are used:
 \begin{equation}
 \alpha_j = \frac{1}{K}.
@@ -76,25 +75,18 @@ Equal mixture weights are used:
 
 \section{Isotropic Point Uncertainty Model}
 
-Each lidar endpoint is assigned an isotropic 2D covariance.
-
-For a point measured at range $r$, define
+Each lidar endpoint is assigned an isotropic 2D covariance. For a point measured at range $r$, define
 \begin{equation}
 \sigma^2(r) = \sigma_r(r)^2 + \left(r\sigma_\theta\right)^2,
 \end{equation}
-where $\sigma_r(r)$ is the range uncertainty model and $\sigma_\theta$ is the angular uncertainty.
-
-For a transformed source point $p_l$ and target point $q_j$, the combined variance is
+where $\sigma_r(r)$ is the range uncertainty model and $\sigma_\theta$ is the angular uncertainty. For a transformed source point $p_l$ and target point $q_j$, the combined variance is
 \begin{equation}
 \sigma_{lj}^2 = \sigma_p^2(r_l) + \sigma_q^2(r_j),
 \end{equation}
-where $r_l$ and $r_j$ are the original lidar ranges associated with points $p_l$ and $q_j$.
-
-The Gaussian covariance is then
+where $r_l$ and $r_j$ are the original lidar ranges associated with points $p_l$ and $q_j$. The Gaussian covariance is then
 \begin{equation}
 \Sigma_{lj} = \sigma_{lj}^2 I_2.
 \end{equation}
-
 This model assumes independent Gaussian uncertainty in the source and target scan endpoints. It ignores anisotropic endpoint covariance, incidence-angle effects, visibility, occlusion, and spatial correlation between scan points.
 
 \section{Negative Log Likelihood Objective}
@@ -103,12 +95,10 @@ For one source point and one target neighbor, define the squared residual
 \begin{equation}
 d_{lj}^2(T_{ik}) = \left\|\tilde p_l(T_{ik}) - q_j\right\|^2.
 \end{equation}
-
 For the isotropic covariance model, the Gaussian argument is
 \begin{equation}
 E_{lj}(T_{ik}) = \frac{d_{lj}^2(T_{ik})}{2\sigma_{lj}^2}.
 \end{equation}
-
 The normalized 2D Gaussian component is
 \begin{equation}
 \mathcal{N}\left(\tilde p_l; q_j, \sigma_{lj}^2 I_2\right)
@@ -116,7 +106,6 @@ The normalized 2D Gaussian component is
 \frac{1}{2\pi\sigma_{lj}^2}
 \exp\left(-E_{lj}\right).
 \end{equation}
-
 Therefore, the log contribution of neighbor $j$ is
 \begin{equation}
 b_{lj}(T_{ik}) =
@@ -126,19 +115,16 @@ b_{lj}(T_{ik}) =
 -
 E_{lj}(T_{ik}).
 \end{equation}
-
 The negative log likelihood contribution of source point $p_l$ is
 \begin{equation}
 J_l(T_{ik}) =
 -\operatorname{logsumexp}_{j \in \mathcal{N}_K(l;T_{ik})}
 \left(b_{lj}(T_{ik})\right).
 \end{equation}
-
 The total scan-pair objective is
 \begin{equation}
 J(T_{ik}) = \sum_{l=1}^{N_k} J_l(T_{ik}).
 \end{equation}
-
 \texttt{logsumexp} is evaluated using a numerically stable form.
 
 \section{Relative Pose Estimate}
@@ -147,7 +133,6 @@ The estimated relative pose is obtained by minimizing the scan-pair objective:
 \begin{equation}
 \hat T_{ik} = \arg\min_{T_{ik} \in SE(2)} J(T_{ik}).
 \end{equation}
-
 The optimization uses a coarse-to-fine search over $(x,y,\theta)$, followed by local refinement. The search region is bounded by a maximum spatial translation value of $T_{ik}$.
 
 \section{Covariance Approximation}
@@ -171,15 +156,11 @@ represents a small perturbation around $\hat T$, and
 \begin{equation}
 H = \nabla^2 J(\hat T)
 \end{equation}
-is the Hessian of the negative log likelihood.
-
-The relative-pose covariance is approximated by
+is the Hessian of the negative log likelihood. The relative-pose covariance is approximated by
 \begin{equation}
 \Sigma_{ik} \approx H^{-1},
 \end{equation}
-provided $H$ is positive definite and well conditioned.
-
-The Hessian may be estimated numerically using centered finite differences of $J(x,y,\theta)$ evaluated near the optimum.
+provided $H$ is positive definite and well conditioned. The Hessian is estimated numerically using centered finite differences of $J(x,y,\theta)$ evaluated near the optimum.
 
 \section{Factor-Graph Edge}
 
@@ -193,7 +174,6 @@ For a pose graph with station poses $X_i$ and $X_k$, this becomes a relative-pos
 \begin{equation}
 X_k \approx X_i \hat T_{ik}.
 \end{equation}
-
 In GTSAM, this may be represented as a \texttt{BetweenFactor<Pose2>} with measurement $\hat T_{ik}$ and noise model derived from $\Sigma_{ik}$.
 
 \section{Bidirectional Consistency Check}
