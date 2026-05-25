@@ -1,0 +1,251 @@
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb}
+\usepackage{bm}
+\usepackage{geometry}
+\usepackage{hyperref}
+
+\geometry{margin=1in}
+
+\title{Scan-Pair Edge Model for Stationary Lidar Map Solving}
+\author{Stuart Johnson and ChatGPT}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\section{Purpose}
+
+This note describes the mathematical model used to estimate a relative planar pose constraint between two stationary lidar scan bundles. The resulting relative pose and covariance may be used as a factor-graph edge, for example as a GTSAM \texttt{BetweenFactor<Pose2>}.
+
+The method is intended for an offline map-solving pipeline. Each station consists of one or more lidar scans acquired while the robot is stationary. The goal is to estimate relative transformations between scan bundles and then optimize the resulting pose graph.
+
+\section{Scan Bundles and Relative Pose}
+
+Let station $i$ provide a target scan bundle
+\begin{equation}
+\mathcal{Q}_i = \{q_j\}_{j=1}^{M_i},
+\end{equation}
+where each $q_j \in \mathbb{R}^2$ is a lidar endpoint represented in the local frame of station $i$.
+
+Let station $k$ provide a source scan bundle
+\begin{equation}
+\mathcal{P}_k = \{p_l\}_{l=1}^{N_k},
+\end{equation}
+where each $p_l \in \mathbb{R}^2$ is represented in the local frame of station $k$.
+
+The relative pose from station $k$ into station $i$ is
+\begin{equation}
+T_{ik} = (x,y,\theta) \in SE(2).
+\end{equation}
+A source point transformed into the target frame is
+\begin{equation}
+\tilde p_l(T_{ik}) = R(\theta)p_l + t,
+\end{equation}
+where
+\begin{equation}
+R(\theta) =
+\begin{bmatrix}
+\cos\theta & -\sin\theta \\
+\sin\theta & \cos\theta
+\end{bmatrix},
+\qquad
+ t = \begin{bmatrix}x \\ y\end{bmatrix}.
+\end{equation}
+
+\section{k-Nearest-Neighbor Gaussian Mixture Model}
+
+For each transformed source point $\tilde p_l$, the $K$ nearest target points in $\mathcal{Q}_i$ are found using a KD-tree. Let this neighbor set be
+\begin{equation}
+\mathcal{N}_K(l;T_{ik}) \subset \{1,\dots,M_i\}.
+\end{equation}
+
+The target scan bundle is modeled locally as a Gaussian mixture. Thus, the likelihood of transformed source point $\tilde p_l$ is approximated by
+\begin{equation}
+P_l(T_{ik}) =
+\sum_{j \in \mathcal{N}_K(l;T_{ik})}
+\alpha_j
+\mathcal{N}\left(\tilde p_l(T_{ik}); q_j, \Sigma_{lj}\right).
+\end{equation}
+
+Equal mixture weights are used:
+\begin{equation}
+\alpha_j = \frac{1}{K}.
+\end{equation}
+
+\section{Isotropic Point Uncertainty Model}
+
+Each lidar endpoint is assigned an isotropic 2D covariance.
+
+For a point measured at range $r$, define
+\begin{equation}
+\sigma^2(r) = \sigma_r(r)^2 + \left(r\sigma_\theta\right)^2,
+\end{equation}
+where $\sigma_r(r)$ is the range uncertainty model and $\sigma_\theta$ is the angular uncertainty.
+
+For a transformed source point $p_l$ and target point $q_j$, the combined variance is
+\begin{equation}
+\sigma_{lj}^2 = \sigma_p^2(r_l) + \sigma_q^2(r_j),
+\end{equation}
+where $r_l$ and $r_j$ are the original lidar ranges associated with points $p_l$ and $q_j$.
+
+The Gaussian covariance is then
+\begin{equation}
+\Sigma_{lj} = \sigma_{lj}^2 I_2.
+\end{equation}
+
+This model assumes independent Gaussian uncertainty in the source and target scan endpoints. It ignores anisotropic endpoint covariance, incidence-angle effects, visibility, occlusion, and spatial correlation between scan points.
+
+\section{Negative Log Likelihood Objective}
+
+For one source point and one target neighbor, define the squared residual
+\begin{equation}
+d_{lj}^2(T_{ik}) = \left\|\tilde p_l(T_{ik}) - q_j\right\|^2.
+\end{equation}
+
+For the isotropic covariance model, the Gaussian argument is
+\begin{equation}
+E_{lj}(T_{ik}) = \frac{d_{lj}^2(T_{ik})}{2\sigma_{lj}^2}.
+\end{equation}
+
+The normalized 2D Gaussian component is
+\begin{equation}
+\mathcal{N}\left(\tilde p_l; q_j, \sigma_{lj}^2 I_2\right)
+=
+\frac{1}{2\pi\sigma_{lj}^2}
+\exp\left(-E_{lj}\right).
+\end{equation}
+
+Therefore, the log contribution of neighbor $j$ is
+\begin{equation}
+b_{lj}(T_{ik}) =
+\log\alpha_j
+-
+\log\left(2\pi\sigma_{lj}^2\right)
+-
+E_{lj}(T_{ik}).
+\end{equation}
+
+The negative log likelihood contribution of source point $p_l$ is
+\begin{equation}
+J_l(T_{ik}) =
+-\operatorname{logsumexp}_{j \in \mathcal{N}_K(l;T_{ik})}
+\left(b_{lj}(T_{ik})\right).
+\end{equation}
+
+The total scan-pair objective is
+\begin{equation}
+J(T_{ik}) = \sum_{l=1}^{N_k} J_l(T_{ik}).
+\end{equation}
+
+\texttt{logsumexp} is evaluated using a numerically stable form.
+
+\section{Relative Pose Estimate}
+
+The estimated relative pose is obtained by minimizing the scan-pair objective:
+\begin{equation}
+\hat T_{ik} = \arg\min_{T_{ik} \in SE(2)} J(T_{ik}).
+\end{equation}
+
+The optimization uses a coarse-to-fine search over $(x,y,\theta)$, followed by local refinement. The search region is bounded by a maximum spatial translation value of $T_{ik}$.
+
+\section{Covariance Approximation}
+
+Near the optimum, the objective is approximated locally as quadratic:
+\begin{equation}
+J(T) \approx J(\hat T)
++ \frac{1}{2}
+\delta^T H \delta,
+\end{equation}
+where
+\begin{equation}
+\delta =
+\begin{bmatrix}
+\delta x \\
+\delta y \\
+\delta\theta
+\end{bmatrix}
+\end{equation}
+represents a small perturbation around $\hat T$, and
+\begin{equation}
+H = \nabla^2 J(\hat T)
+\end{equation}
+is the Hessian of the negative log likelihood.
+
+The relative-pose covariance is approximated by
+\begin{equation}
+\Sigma_{ik} \approx H^{-1},
+\end{equation}
+provided $H$ is positive definite and well conditioned.
+
+The Hessian may be estimated numerically using centered finite differences of $J(x,y,\theta)$ evaluated near the optimum.
+
+\section{Factor-Graph Edge}
+
+The scan-pair front-end returns:
+\begin{equation}
+\hat T_{ik}, \qquad \Sigma_{ik}, \qquad J(\hat T_{ik}),
+\end{equation}
+plus diagnostic quantities such as match score, Hessian condition number, neighbor residual statistics, and bidirectional consistency if available.
+
+For a pose graph with station poses $X_i$ and $X_k$, this becomes a relative-pose constraint:
+\begin{equation}
+X_k \approx X_i \hat T_{ik}.
+\end{equation}
+
+In GTSAM, this may be represented as a \texttt{BetweenFactor<Pose2>} with measurement $\hat T_{ik}$ and noise model derived from $\Sigma_{ik}$.
+
+\section{Bidirectional Consistency Check}
+
+The scan-pair objective is generally directional because $\mathcal{Q}_i$ is treated as the target GMM and $\mathcal{P}_k$ as the transformed source set. A useful diagnostic is to also estimate $\hat T_{ki}$ by reversing the roles of the scan bundles.
+
+A useful consistency diagnostic is obtained by estimating the
+relative transform in both directions:
+\begin{equation}
+\hat T_{ik},
+\qquad
+\hat T_{ki}.
+\end{equation}
+Ideally, these estimates should satisfy
+\begin{equation}
+\hat T_{ki} \approx \hat T_{ik}^{-1}.
+\end{equation}
+Define the residual transform
+\begin{equation}
+T_{\mathrm{err}}
+=
+\hat T_{ik}\hat T_{ki}.
+\end{equation}
+If the two estimates are perfectly consistent, then
+\begin{equation}
+T_{\mathrm{err}} = I,
+\end{equation}
+where $I$ is the identity element of $SE(2)$.
+
+A local vector representation of the residual may be obtained using
+the Lie-group logarithm map:
+\begin{equation}
+e_{\mathrm{bi}}
+=
+\mathrm{Log}(T_{\mathrm{err}})
+\in \mathbb{R}^3.
+\end{equation}
+The vector $e_{\mathrm{bi}}$ approximately represents
+translational and rotational inconsistency:
+\begin{equation}
+e_{\mathrm{bi}}
+\approx
+\begin{bmatrix}
+\delta x \\
+\delta y \\
+\delta \theta
+\end{bmatrix}.
+\end{equation}
+
+Large values of $\|e_{\mathrm{bi}}\|$ indicate that the scan-pair
+registration is weak, ambiguous, or inconsistent. This is computed and provided as an edge metric.
+
+
+\end{document}
+

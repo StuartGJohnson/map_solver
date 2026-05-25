@@ -1,0 +1,33 @@
+This is the repo of a c++ (cmake) ros2 package which will provide a library and executables to process a sequence of lidar scans into a high quality trajectory along the lidar scans. These lidar scans are collected from a stationary 2d lidar sensor at each waypoint. The purpose of the trajectory is to reconstruct a high-quality 2d occupancy map from the sequence of scans. 
+
+C++ code will exist in /src with appropriate include files in /include. Note that there is code for a related project already present in these directories. This code contains an example of machinery for hessian estimation and an example of coarse-fine search (see task 2). Note that this code includes machinery for the use an computation of the EDT, which we will not use in this project. In the code tasks below, generate new source and include files.
+
+Task 1: 
+
+- adapt the lidar simulation code in the tests/ directory to generate two lidar scans of the assymmetric map example at nearby poses.
+
+
+Task 2:
+
+- write a cpp class to convert the lidar scan bag file data (/scan) in the directory /data/mdc*/waypoint_0000 into the same scan format output by the simulator in task 1.
+- write a unit test which plots the lidar scan result in the robot coordinate system. You can adapt the existing gnuplot code.
+
+
+Task 3:
+
+Implement and test the mathematics in writeup/map_solver.tex, which defines the operations involved in computing the edges of a pose graph for GTSAM consumption. This will involve writing c++ code (in src/) and unit tests (in tests/).
+
+Convert each stationary scan bundle to a 2D point set with associated range values.
+Build a KD-tree for each target scan bundle.
+Implement soft GMM scoring with configurable $K$, using stable log-sum-exp.
+Use a bounded coarse-to-fine search over $(x,y,\theta)$.
+Estimate the Hessian using finite differences near the optimum.
+Return relative pose, covariance, and diagnostics.
+Convert accepted relative-pose estimates into GTSAM factors.
+
+Task 4:
+
+Write a functional test which will generate two lidar scans with a known relative pose (see task 1), feed the lidar scan data into the scan_matcher from step 3, and validate the result. Note that at some point I will be using gnuplot plotting to inspect the cost surface for artifacts.
+
+
+
