@@ -3,6 +3,7 @@
 
 #include <filesystem>
 #include <string>
+#include <vector>
 
 #include <sensor_msgs/msg/laser_scan.hpp>
 
@@ -20,9 +21,21 @@ struct ScanBagConversionOptions
   int scan_stride{1};
 };
 
+struct LidarRay
+{
+  double angle{0.0};
+  double range{0.0};
+  double max_range{0.0};
+  bool hit{false};
+};
+
 struct ScanBundle
 {
   LaserScanPoints points;
+  std::vector<LidarRay> rays;
+  std::filesystem::path waypoint_directory;
+  std::filesystem::path bag_path;
+  std::string waypoint_name;
   std::size_t scan_count{0};
   std::size_t finite_range_count{0};
 };

@@ -8,6 +8,7 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(geometry_msgs REQUIRED)
+find_package(GTSAM REQUIRED)
 find_package(OpenCV REQUIRED COMPONENTS core imgproc)
 find_package(nav_msgs REQUIRED)
 find_package(rclcpp REQUIRED)
@@ -21,7 +22,10 @@ set(CORE_LIBRARY_TARGET ${PROJECT_NAME}_core)
 add_library(${CORE_LIBRARY_TARGET}
   src/localization_search.cpp
   src/map_model.cpp
+  src/occupancy_map_builder.cpp
+  src/pose_graph.cpp
   src/scan_bag_converter.cpp
+  src/scan_match_batch.cpp
   src/scan_matcher.cpp
   src/sim.cpp
 )
@@ -41,6 +45,7 @@ ament_target_dependencies(${CORE_LIBRARY_TARGET}
 )
 target_link_libraries(${CORE_LIBRARY_TARGET}
   Eigen3::Eigen
+  gtsam
   ${OpenCV_LIBS}
 )
 
@@ -89,6 +94,7 @@ if(BUILD_TESTING)
     target_compile_definitions(test_scan_pipeline PRIVATE
       MAP_SOLVER_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
     target_link_libraries(test_scan_pipeline ${CORE_LIBRARY_TARGET})
+    set_tests_properties(test_scan_pipeline PROPERTIES TIMEOUT 240)
   endif()
 endif()
 

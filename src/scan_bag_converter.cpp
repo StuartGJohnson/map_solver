@@ -85,6 +85,9 @@ ScanBundle ScanBagConverter::readWaypointDirectory(
 
   rclcpp::Serialization<sensor_msgs::msg::LaserScan> serializer;
   ScanBundle bundle;
+  bundle.waypoint_directory = waypoint_directory;
+  bundle.bag_path = bag_path;
+  bundle.waypoint_name = waypoint_directory.filename().string();
   int topic_scan_index = 0;
   while (reader.has_next()) {
     const auto bag_msg = reader.read_next();
@@ -105,6 +108,21 @@ ScanBundle ScanBagConverter::readWaypointDirectory(
       bundle.points.ranges.end(), points.ranges.begin(), points.ranges.end());
     bundle.points.variances.insert(
       bundle.points.variances.end(), points.variances.begin(), points.variances.end());
+
+    for (std::size_t i = 0; i < scan.ranges.size(); ++i) {
+      const double angle = static_cast<double>(scan.angle_min) +
+        static_cast<double>(i) * static_cast<double>(scan.angle_increment);
+      const double measured_range = static_cast<double>(scan.ranges[i]);
+      const double max_range = static_cast<double>(scan.range_max);
+      const bool hit = std::isfinite(measured_range) &&
+        measured_range >= static_cast<double>(scan.range_min) &&
+        measured_range <= max_range;
+      bundle.rays.push_back(LidarRay{
+        angle,
+        hit ? measured_range : max_range,
+        max_range,
+        hit});
+    }
   }
 
   return bundle;

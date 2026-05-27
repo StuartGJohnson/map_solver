@@ -197,6 +197,8 @@ ScanMatcher::ScanMatcher(ScanMatcherOptions options)
   options_.max_translation = std::max(options_.max_translation, 0.01);
   options_.coarse_xy_step = std::max(options_.coarse_xy_step, 0.005);
   options_.coarse_yaw_step = std::max(options_.coarse_yaw_step, 0.001);
+  options_.coarse_yaw_half_width = std::clamp(
+    options_.coarse_yaw_half_width, options_.coarse_yaw_step, kPi);
   options_.refine_levels = std::max(options_.refine_levels, 0);
   options_.min_xy_step = std::max(options_.min_xy_step, 0.001);
   options_.min_yaw_step = std::max(options_.min_yaw_step, 1.0e-4);
@@ -226,9 +228,10 @@ ScanMatchResult ScanMatcher::match(
   const int y_count = static_cast<int>(
     std::floor((2.0 * options_.max_translation) / options_.coarse_xy_step)) + 1;
   const int yaw_steps = std::max(
-    1, static_cast<int>(std::ceil(kTwoPi / options_.coarse_yaw_step)));
-  result.coarse_cost_map.min_x = -options_.max_translation;
-  result.coarse_cost_map.min_y = -options_.max_translation;
+    1, static_cast<int>(
+      std::floor((2.0 * options_.coarse_yaw_half_width) / options_.coarse_yaw_step)) + 1);
+  result.coarse_cost_map.min_x = options_.search_center.x - options_.max_translation;
+  result.coarse_cost_map.min_y = options_.search_center.y - options_.max_translation;
   result.coarse_cost_map.xy_step = options_.coarse_xy_step;
   result.coarse_cost_map.min_score_by_xy.resize(x_count, y_count);
   result.coarse_cost_map.min_score_by_xy.setConstant(std::numeric_limits<double>::infinity());
@@ -242,8 +245,8 @@ ScanMatchResult ScanMatcher::match(
       const double y = result.coarse_cost_map.min_y +
         static_cast<double>(iy) * options_.coarse_xy_step;
       for (int yaw_index = 0; yaw_index < yaw_steps; ++yaw_index) {
-        const double yaw = -kPi +
-          static_cast<double>(yaw_index) * kTwoPi / static_cast<double>(yaw_steps);
+        const double yaw = options_.search_center.yaw - options_.coarse_yaw_half_width +
+          static_cast<double>(yaw_index) * options_.coarse_yaw_step;
         const Pose2D pose{x, y, normalizeYaw(yaw)};
         const double cost = score_candidate(pose);
         result.diagnostics.evaluated_pose_count += 1U;
@@ -272,10 +275,16 @@ ScanMatchResult ScanMatcher::match(
             }
             const Pose2D candidate{
               std::clamp(best.x + static_cast<double>(dx) * xy_step,
-                -options_.max_translation, options_.max_translation),
+                options_.search_center.x - options_.max_translation,
+                options_.search_center.x + options_.max_translation),
               std::clamp(best.y + static_cast<double>(dy) * xy_step,
-                -options_.max_translation, options_.max_translation),
-              normalizeYaw(best.yaw + static_cast<double>(dt) * yaw_step)};
+                options_.search_center.y - options_.max_translation,
+                options_.search_center.y + options_.max_translation),
+              normalizeYaw(options_.search_center.yaw + std::clamp(
+                normalizeYaw(best.yaw + static_cast<double>(dt) * yaw_step -
+                options_.search_center.yaw),
+                -options_.coarse_yaw_half_width,
+                options_.coarse_yaw_half_width))};
             const double cost = score_candidate(candidate);
             result.diagnostics.evaluated_pose_count += 1U;
             if (cost + 1.0e-12 < best_cost) {

@@ -17,7 +17,9 @@ namespace map_solver
 struct ScanMatcherOptions
 {
   int k_neighbors{5};
+  Pose2D search_center;
   double max_translation{1.0};
+  double coarse_yaw_half_width{kPi};
   double coarse_xy_step{0.20};
   double coarse_yaw_step{5.0 * kPi / 180.0};
   int refine_levels{4};
