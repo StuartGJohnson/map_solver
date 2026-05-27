@@ -41,15 +41,24 @@ Terminal 1:
 
 ```colcon build --packages-select ugv ugv_base_node ugv_bringup ugv_description differential_drive_test ldlidar_stl_ros2 rf2o_laser_odometry safety gazebo_differential_drive_robot_4wheel point_cloud_tools frontier_explorer rviz_record ground_truth_republish trajectory_data_collector global_robot_localization mapping_data_collector map_solver --cmake-args -DCMAKE_BUILD_TYPE=Release```
 
+```source install/setup.bash```
+
 Terminal 1:
 
 ```ros2 launch ugv bringup_amcl_sim_gt_no_rot_localization.launch.py```
 
 Terminal 2:
+(in the ugv_ws directory)
+
+```source install/setup.bash```
 
 ```ros2 launch mapping_data_collector mapping_data_collector.launch.py```
 
 Terminal 3:
+(in the ugv_ws directory)
+
+```source install/setup.bash```
+
 Set the initial pose:
 
 ```ros2 action send_goal   /LocalizeInMap   global_robot_localization/action/LocalizeInMap   "{num_scans: 1, collection_timeout: {sec: 10, nanosec: 0}, suppress_initialpose: false, suppress_markers: false}"   --feedback```
