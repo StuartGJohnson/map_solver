@@ -10,7 +10,7 @@ This package provides command line (offline) tools for processing stationary rob
 
 Using the process described in the Gazebo data generation section, I have a closed arc trajectory of some 20 waypoints, with bag files of lidar scans (etc.) collected from a stationary robot. The results below have been generated from code in ```tests/test_scan_pipeline.cpp```.
 
-First, we attempt a scan match of all sequential pairs and stack up the transforms, reassembling the scans in a single coordinate frame using these NN scan matches:
+First, we attempt a scan match of all sequential pairs and stack up the transforms, reassembling the scans in a single coordinate frame using these NN scan matches. Note the colorbar denotes the waypoint (sequential) numbering:
 
 ![scan_match_sequential_pairs](plots/gazebo_waypoint_raw_scan_match_global_endpoints.png)
 
