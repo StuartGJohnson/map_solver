@@ -90,3 +90,4 @@ TBD
 
 Development of this package made use of OpenAI ChatGPT
 (GPT-5.4/5.5) and Codex tools for code generation, documentation drafting, and technical discussion.
+ See ```instructions1.txt``` for an example of some Codex prompting (the first prompt, anyway). Codex followed this math pretty well, as far as I can tell so far.
