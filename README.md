@@ -4,7 +4,18 @@ ROS 2 Humble `ament_cmake` package for C++ 2d-lidar scan matching and associated
 
 ## Description
 
-This package provides command line (offline) tools for processing stationary robot lidar scans into (in principle) high-quality occupancy maps via scan-matching followed by GTSAM optimization and occupancy map extraction. I am really just tinkering with various methods and trying to peek under the hood of (online) SLAM methods (like slam_toolbox).
+This package provides command line (offline) tools for processing stationary robot lidar scans into (in principle) high-quality occupancy maps via scan-matching followed by GTSAM optimization and occupancy map extraction. The algorithms/approach used herein are designed/selected to mitigate against:
+- motion blur due to robot motion during lidar scans
+- poor quality odometry (this is a skid-steer robot!)
+
+Some of the technical challenges are:
+- compute requirements for scan matching (and so, c++ and thread-parallelism)
+- management (selection, etc.) of edge estimates for GTSAM
+- the mathematics of scan matching (see the math background section below)
+
+A primary motivation of this package is how to establish a quality map of the environment: once one has a good map of the environment, localization is a far easier problem than SLAM.
+
+If nothing else, this repo is an attempt to peek under the hood of (online) SLAM methods (like slam_toolbox). 
 
 ### Consecutive pairwise and every-other pairwise scan matching
 
@@ -28,7 +39,7 @@ Finally, we generate an occupancy map by accumulating the log-odds ratio of all 
 
 ![occupancy_map](plots/gazebo_waypoint_loop_closure_occupancy_map.png)
 
-The true occupancy map is synthetically generated (see https://github.com/StuartGJohnson/WorldGeneration):
+The true occupancy map is synthetically generated (see https://github.com/StuartGJohnson/WorldGeneration) and used as an input to the Gazebo simulator:
 
 ![true_occupancy_map](plots/scene_stuffx3_ros2.png)
 
