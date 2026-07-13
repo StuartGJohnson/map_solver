@@ -17,7 +17,17 @@ A primary motivation of this package is how to establish a quality map of the en
 
 If nothing else, this repo is an attempt to peek under the hood of (online) SLAM methods (like slam_toolbox). 
 
-### Consecutive pairwise and every-other pairwise scan matching
+## Math background
+
+### Scan Matching
+
+[Scan Matching](https://StuartGJohnson.github.io/map_solver/map_solver.pdf)
+
+### Occupancy Map generation
+
+TBD
+
+## Consecutive pairwise and every-other pairwise scan matching
 
 Using the process described in the Gazebo data generation section, I have a closed arc trajectory of some 20 waypoints, with bag files of lidar scans (etc.) collected from a stationary robot. The results below have been generated from code in ```tests/test_scan_pipeline.cpp```.
 
@@ -86,16 +96,6 @@ Execute the trajectory:
 ```ros2 action send_goal /execute_waypoints nav2_msgs/action/FollowWaypoints "{poses: []}"```
 
 This will generate a series of bag files in (by default) $HOME/mapping_data_collector_data.
-
-## Math background
-
-### Scan Matching
-
-[Scan Matching](https://StuartGJohnson.github.io/map_solver/map_solver.pdf)
-
-### Occupancy Map generation
-
-TBD
 
 ## AI Assistance
 
